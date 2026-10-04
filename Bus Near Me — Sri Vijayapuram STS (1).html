@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bus Near Me — Sri Vijayapuram STS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#12203A; --ink-soft:#4C5A73; --bg:#E9EBEE; --surface:#FFFFFF; --line:#D3D7DE;
+    --navy:#12203A; --navy-2:#1C3157; --amber:#C8790A; --amber-bg:#FBEBD6; --teal:#1B6E62; --teal-bg:#E1EFEC; --red:#B23A2E;
+    box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ink:#ECEFF4; --ink-soft:#9AA6BB; --bg:#0E1520; --surface:#161F2E; --line:#2A3549;
+      --navy:#0B1220; --navy-2:#16233B; --amber:#E7A23D; --amber-bg:#3A2C13; --teal:#4FBDA9; --teal-bg:#12332C; --red:#E0685A;
+    }
+  }
+  :root[data-theme="dark"]{
+    --ink:#ECEFF4; --ink-soft:#9AA6BB; --bg:#0E1520; --surface:#161F2E; --line:#2A3549;
+    --navy:#0B1220; --navy-2:#16233B; --amber:#E7A23D; --amber-bg:#3A2C13; --teal:#4FBDA9; --teal-bg:#12332C; --red:#E0685A;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{ margin:0; background:var(--bg); color:var(--ink); font-family:'Space Grotesk', sans-serif; -webkit-font-smoothing:antialiased; }
+  .app{ max-width:640px; margin:0 auto; min-height:100%; display:flex; flex-direction:column; }
+  header{
+    background:linear-gradient(180deg, var(--navy) 0%, var(--navy-2) 100%); color:#F4F6FA;
+    padding:calc(env(safe-area-inset-top,0px) + 18px) 20px 18px; border-bottom:3px solid var(--amber);
+    position:sticky; top:0; z-index:5;
+  }
+  .brand{ display:flex; align-items:baseline; justify-content:space-between; gap:12px; }
+  .brand h1{ font-size:1.18rem; margin:0; font-weight:700; }
+  .brand h1 span{ color:var(--amber); }
+  .clock{ font-family:'IBM Plex Mono', monospace; font-size:1.5rem; font-weight:600; margin-top:8px; }
+  .statusline{ margin-top:8px; font-size:0.84rem; color:#C6CEE0; line-height:1.5; }
+  .btnrow{ margin-top:10px; display:flex; gap:8px; }
+  .btnrow button{
+    flex:1; padding:11px 10px; border-radius:9px; border:1px solid rgba(255,255,255,0.28);
+    background:var(--amber); color:#1A1206; font-family:'Space Grotesk',sans-serif; font-weight:700;
+    font-size:0.92rem; cursor:pointer;
+  }
+  .btnrow button.secondary{ background:rgba(255,255,255,0.08); color:#F4F6FA; font-weight:600; flex:0 0 auto; padding:11px 14px; }
+  .manual-panel{ margin-top:12px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.18); border-radius:10px; padding:12px; }
+  .manual-panel.hidden{ display:none; }
+  .manual-panel label{ display:block; font-size:0.78rem; color:#C6CEE0; margin-bottom:6px; }
+  .manual-panel select, .manual-panel input{
+    width:100%; padding:9px 10px; border-radius:7px; border:1px solid rgba(255,255,255,0.25);
+    background:rgba(255,255,255,0.08); color:#F4F6FA; font-family:'Space Grotesk',sans-serif; font-size:0.9rem; margin-bottom:8px;
+  }
+  .manual-panel input::placeholder{ color:#8E99B3; }
+  .manual-panel button{
+    width:100%; padding:9px 10px; border-radius:7px; border:1px solid var(--amber); background:var(--amber);
+    color:#1A1206; font-weight:700; font-family:'Space Grotesk',sans-serif; font-size:0.88rem; cursor:pointer; margin-bottom:4px;
+  }
+  .manual-divider{ font-size:0.76rem; color:#8E99B3; text-align:center; margin:10px 0 8px; }
+  .manual-coords{ display:flex; gap:8px; }
+  .manual-coords input{ margin-bottom:8px; }
+
+  main{ flex:1; padding:16px 16px 40px; }
+  .hit{
+    background:var(--surface); border:1px solid var(--line); border-left:5px solid var(--teal);
+    border-radius:12px; padding:13px 14px; margin-bottom:10px;
+  }
+  .hit.soon{ border-left-color:var(--amber); background:var(--amber-bg); }
+  .hit .row1{ display:flex; align-items:center; gap:10px; }
+  .hit .route{ font-family:'IBM Plex Mono', monospace; font-size:0.75rem; background:var(--bg); color:var(--ink-soft); padding:3px 7px; border-radius:5px; }
+  .hit .path{ font-weight:600; font-size:0.98rem; flex:1; min-width:0; }
+  .hit .eta{ font-family:'IBM Plex Mono', monospace; font-weight:700; font-size:0.95rem; color:var(--teal); white-space:nowrap; }
+  .hit.soon .eta{ color:var(--amber); }
+  .hit .meta{ margin-top:5px; font-size:0.8rem; color:var(--ink-soft); display:flex; gap:14px; flex-wrap:wrap; }
+  .hit .meta b{ color:var(--ink); font-family:'IBM Plex Mono',monospace; font-weight:600; }
+
+  .empty{ text-align:center; color:var(--ink-soft); padding:40px 14px; background:var(--surface); border:1px dashed var(--line); border-radius:12px; }
+  .empty b{ display:block; color:var(--ink); font-size:1rem; margin-bottom:6px; }
+
+  .section-title{ font-size:0.78rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-soft); margin:18px 2px 8px; font-weight:600; }
+  .foot-note{ font-size:0.76rem; color:var(--ink-soft); text-align:center; margin-top:16px; line-height:1.55; padding:0 6px; }
+  .spinner{ text-align:center; padding:40px 10px; color:var(--ink-soft); font-size:0.9rem; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand"><h1>Bus Near <span>Me</span> · Sri Vijayapuram STS</h1></div>
+    <div class="clock" id="clock">--:--:--</div>
+    <div class="statusline" id="statusLine">Tap "Locate me" to check buses near you.</div>
+    <div class="btnrow">
+      <button id="locateBtn" type="button">📍 Locate me</button>
+      <button id="refreshBtn" type="button" class="secondary">↻</button>
+      <button id="manualBtn" type="button" class="secondary">✎ Manual</button>
+    </div>
+    <div id="manualPanel" class="manual-panel hidden">
+      <label>Nearest known stop (quickest)</label>
+      <select id="manualStop"></select>
+      <button id="useStopBtn" type="button">Use this stop as my location</button>
+      <div class="manual-divider">or enter coordinates</div>
+      <div class="manual-coords">
+        <input id="manualLat" type="text" inputmode="decimal" placeholder="Latitude, e.g. 11.634">
+        <input id="manualLon" type="text" inputmode="decimal" placeholder="Longitude, e.g. 92.702">
+      </div>
+      <button id="useCoordsBtn" type="button">Use these coordinates</button>
+    </div>
+  </header>
+  <main>
+    <div id="resultArea"><div class="empty"><b>Waiting for your location</b>Tap "Locate me" above and allow location access.</div></div>
+    <p class="foot-note" id="footNote"></p>
+  </main>
+</div>
+<script>
+const COORDS = {
+  "Bus Terminus": [11.669677, 92.7396297],
+  "Anant Vihar": [11.6040592, 92.7015062],
+  "Anna Nagar": [11.5487884, 92.7283787],
+  "Attam Pahad": [11.6343083, 92.7023574],
+  "Bambooflat": [11.70817, 92.721118],
+  "Bimblitan Basti": [11.5778932, 92.704832],
+  "Bimlitan": [11.5778932, 92.704832],
+  "Brichgunj": [11.6113284, 92.7456298],
+  "Brookshabad": [11.6380404, 92.7391379],
+  "Carbyn Junction": [11.6373867, 92.7351551],
+  "Carbyn's Cove Beach": [11.6450857, 92.7481568],
+  "Chatham": [11.6879216, 92.7241781],
+  "Chidiyatapu": [11.5059682, 92.7014649],
+  "Collinpur": [11.6929648, 92.5987245],
+  "Ferrargunj": [11.7201961, 92.6561571],
+  "Garacharma TTI": [11.6096079, 92.7057065],
+  "Gopal Nagar": [11.6416884, 92.6600922],
+  "Habdipur": [11.666232, 92.6495207],
+  "Indra Nagar": [11.5834988, 92.6454232],
+  "Japan Road": [11.6547159, 92.7255893],
+  "Jirkatang": [11.8369855, 92.6668166],
+  "Kodiyaghat": [11.5336967, 92.7243883],
+  "Macca Pahad": [11.584975, 92.715340],
+  "Manglutan": [11.5820075, 92.6566253],
+  "Manjery": [11.5426, 92.6524328],
+  "Marine Colony": [11.6392285, 92.7137498],
+  "Medical": [11.6497398, 92.7173395],
+  "Middle Strait": [12.1599132, 92.7557293],
+  "Namunaghar": [11.6726845, 92.6977845],
+  "New Pahargaon": [11.6314572, 92.7251891],
+  "North Wandoor": [11.6211506, 92.6171772],
+  "PS Teylarabad": [11.6096815, 92.7007432],
+  "Pema": [11.5899862, 92.7103925],
+  "RSN Farm": [11.5969064, 92.7070597],
+  "Rajaji Nagar": [11.666738, 92.7468737],
+  "Tirur": [11.724838, 92.6152059],
+  "Tushnabad": [11.6762406, 92.6425027],
+  "Wandoor": [11.5943612, 92.6195682]
+};
+const ALIAS = {
+  "Attampahad": "Attam Pahad",
+  "Attampahar": "Attam Pahad",
+  "Tushnabad Jn": "Tushnabad",
+  "Pema Tsunami": "Pema",
+  "New Wandoor": "North Wandoor"
+};
+function canon(name){ return ALIAS[name] || name; }
+function coordOf(name){ return COORDS[canon(name)] || null; }
+
+
+const PB_TRIPS = [
+["SVP1","06:30","Bus Terminus","Jirkatang","08:00",""],
+["SVP1","08:30","Jirkatang","Bus Terminus","10:00",""],
+["SVP1","12:15","Bus Terminus","Jirkatang","13:45",""],
+["SVP1","14:20","Jirkatang","Bus Terminus","16:00",""],
+["SVP2","08:00","Bus Terminus","Jirkatang","09:35",""],
+["SVP2","09:40","Jirkatang","Bus Terminus","11:15",""],
+["SVP2","15:00","Bus Terminus","Jirkatang","16:30",""],
+["SVP2","16:40","Jirkatang","Bus Terminus","18:15",""],
+["SVP3","06:50","Bus Terminus","Bambooflat","08:15","via G B Pant"],
+["SVP3","08:25","Bambooflat","Bus Terminus","10:15",""],
+["SVP3","12:40","Bus Terminus","Bambooflat","14:10",""],
+["SVP3","14:25","Bambooflat","Bus Terminus","16:00",""],
+["SVP4","05:15","Bus Terminus","Ferrargunj","06:30","via Tushnabad"],
+["SVP4","06:35","Ferrargunj","Bus Terminus","07:25","via Tushnabad"],
+["SVP4","08:15","Bus Terminus","Ferrargunj","09:10","via Tushnabad"],
+["SVP4","09:15","Ferrargunj","Bus Terminus","10:45","via Tushnabad"],
+["SVP4","11:45","Bus Terminus","Ferrargunj","12:40","via Tushnabad"],
+["SVP4","12:45","Ferrargunj","Bus Terminus","13:50","via Tushnabad"],
+["SVP5","07:40","Bus Terminus","Ferrargunj","08:40","via Tushnabad"],
+["SVP5","08:45","Ferrargunj","Bus Terminus","10:15","via Tushnabad"],
+["SVP5","14:00","Bus Terminus","Ferrargunj","15:05","via Tushnabad"],
+["SVP5","15:10","Ferrargunj","Bus Terminus","16:20","via Tushnabad"],
+["SVP5","17:10","Bus Terminus","Ferrargunj","18:20","via Tushnabad"],
+["SVP5","18:20","Ferrargunj","Bus Terminus","19:30","via Tushnabad"],
+["SVP6","04:30","Bus Terminus","Ferrargunj","05:30",""],
+["SVP6","05:45","Ferrargunj","Bus Terminus","06:45","via G B Pant"],
+["SVP6","07:10","Bus Terminus","Ferrargunj","08:20",""],
+["SVP6","08:25","Ferrargunj","Bus Terminus","09:35",""],
+["SVP6","10:15","Bus Terminus","Tushnabad","11:15",""],
+["SVP6","11:25","Tushnabad","Bus Terminus","12:25",""],
+["SVP7","04:45","Bus Terminus","Tirur","06:00",""],
+["SVP7","06:10","Tirur","Bus Terminus","07:30","via G B Pant"],
+["SVP7","08:30","Bus Terminus","Tirur","09:55",""],
+["SVP7","10:00","Tirur","Bus Terminus","11:30",""],
+["SVP8","04:15","Tirur","Bus Terminus","05:50",""],
+["SVP8","06:00","Bus Terminus","Tirur","07:30",""],
+["SVP8","07:35","Tirur","Bus Terminus","09:30","via JNRM"],
+["SVP8","12:40","Bus Terminus","Tirur","13:55",""],
+["SVP8","14:00","Tirur","Bus Terminus","15:30",""],
+["SVP8","16:15","Bus Terminus","Tirur","17:20",""],
+["SVP8","17:25","Tirur","Bus Terminus","19:40",""],
+["SVP8","20:30","Bus Terminus","Tirur","22:00","overnight halt at Tirur"],
+["SVP9","07:00","Bus Terminus","Tirur","08:25",""],
+["SVP9","08:30","Tirur","Bus Terminus","10:00",""],
+["SVP9","13:40","Bus Terminus","Tirur","15:05",""],
+["SVP9","15:10","Tirur","Bus Terminus","16:50",""],
+["SVP9","17:15","Bus Terminus","Tirur","18:40",""],
+["SVP9","18:45","Tirur","Bus Terminus","20:30",""],
+["SVP10","04:00","Tirur","Bus Terminus","05:45",""],
+["SVP10","06:10","Bus Terminus","Habdipur","07:05",""],
+["SVP10","07:10","Habdipur","Bus Terminus","08:25","via JNRM"],
+["SVP10","11:00","Bus Terminus","Tirur","12:30",""],
+["SVP10","12:35","Tirur","Bus Terminus","14:00",""],
+["SVP10","14:40","Bus Terminus","Tirur","15:55","via Collinpur"],
+["SVP10","16:00","Tirur","Bus Terminus","17:50",""],
+["SVP10","19:00","Bus Terminus","Tirur","20:30","overnight halt at Tirur"],
+["SVP11","05:45","Bus Terminus","Collinpur","06:55",""],
+["SVP11","07:00","Collinpur","Bus Terminus","08:30","via JNRM"],
+["SVP11","09:45","Bus Terminus","Tirur","11:15","via Collinpur"],
+["SVP11","11:20","Tirur","Bus Terminus","12:45",""],
+["SVP12","06:15","Bus Terminus","Tushnabad","07:15",""],
+["SVP12","07:20","Tushnabad","Bus Terminus","08:30","via JNRM"],
+["SVP13","06:40","Bus Terminus","Tushnabad","07:35","via Burma Basti"],
+["SVP13","07:40","Tushnabad","Bus Terminus","08:40",""],
+["SVP13","09:40","Bus Terminus","Namunaghar","10:45",""],
+["SVP13","10:50","Namunaghar","Bus Terminus","12:00",""],
+["SVP13","13:15","Bus Terminus","Ferrargunj","14:15",""],
+["SVP13","14:20","Ferrargunj","Bus Terminus","15:25",""],
+["SVP14","14:40","Bus Terminus","Manjery","15:40","via Nayasahar"],
+["SVP14","15:45","Manjery","Bus Terminus","16:45","via Nayasahar"],
+["SVP14","17:15","Bus Terminus","Manjery","18:15","via Nayasahar"],
+["SVP14","18:20","Manjery","Bus Terminus","19:20","via Nayasahar"],
+["SVP14","20:00","Bus Terminus","Manjery","21:00","via Nayasahar"],
+["SVP14","21:05","Manjery","Bus Terminus","22:10","via Nayasahar"],
+["SVP15","04:30","Bus Terminus","Gopal Nagar","05:25",""],
+["SVP15","05:30","Gopal Nagar","Bus Terminus","06:25","via Lal Pahad"],
+["SVP15","06:30","Bus Terminus","Gopal Nagar","07:35","via Vayou Vihar"],
+["SVP15","07:40","Gopal Nagar","Bus Terminus","08:40","via G B Pant"],
+["SVP15","09:30","Bus Terminus","Gopal Nagar","10:10","via Lal Pahad, PHC CD"],
+["SVP15","10:15","Gopal Nagar","Bus Terminus","11:30","via Lal Pahad, PHC CD"],
+["SVP16","05:15","Bus Terminus","Namunaghar","06:15",""],
+["SVP16","06:40","Namunaghar","Bus Terminus","07:40",""],
+["SVP16","08:30","Bus Terminus","Namunaghar","09:25",""],
+["SVP16","09:30","Namunaghar","Bus Terminus","10:40",""],
+["SVP16","13:00","Bus Terminus","Ferrargunj","14:25","via Namunaghar"],
+["SVP16","14:30","Ferrargunj","Bus Terminus","16:00","via Namunaghar"],
+["SVP16","17:00","Bus Terminus","Namunaghar","17:55","via DBRAIT, ITI"],
+["SVP16","18:00","Namunaghar","Bus Terminus","19:10",""],
+["SVP17","06:00","Bus Terminus","Namunaghar","07:05",""],
+["SVP17","07:10","Namunaghar","Bus Terminus","08:30","via DBRAIT, ITI, G B Pant"],
+["SVP17","11:30","Bus Terminus","Ferrargunj","12:25",""],
+["SVP17","12:40","Ferrargunj","Bus Terminus","13:40",""],
+["SVP17","15:30","Bus Terminus","Namunaghar","16:30",""],
+["SVP17","16:35","Namunaghar","Bus Terminus","17:40",""],
+["SVP18","06:40","Bus Terminus","Wandoor","07:35","via Dhani Khadi"],
+["SVP18","07:40","Wandoor","Bus Terminus","08:40","via Dhani Khadi"],
+["SVP18","09:40","Bus Terminus","Wandoor","10:15","via Dhani Khadi"],
+["SVP18","10:20","Wandoor","Bus Terminus","11:20","via Dhani Khadi"],
+["SVP18","14:30","Bus Terminus","Tushnabad","15:35",""],
+["SVP18","15:40","Tushnabad","Bus Terminus","16:40",""],
+["SVP18","18:30","Bus Terminus","Tushnabad Jn","19:25",""],
+["SVP18","19:30","Tushnabad","Bus Terminus","20:30",""],
+["SVP19","05:15","Bus Terminus","Wandoor","06:10","via Dhani Khadi"],
+["SVP19","06:15","Wandoor","Bus Terminus","07:15","via Dhani Khadi"],
+["SVP19","07:40","Bus Terminus","Wandoor","08:40","via Dhani Khadi"],
+["SVP19","08:40","Wandoor","Bus Terminus","09:50","via Dhani Khadi"],
+["SVP19","13:40","Bus Terminus","Wandoor","14:35","via Nayasahar"],
+["SVP19","14:40","Wandoor","Bus Terminus","15:40","via Nayasahar"],
+["SVP19","16:45","Bus Terminus","Wandoor","17:35","via Nayasahar"],
+["SVP19","17:40","Wandoor","Bus Terminus","18:40",""],
+["SVP20","06:00","Bus Terminus","Wandoor","07:00","via Nayasahar"],
+["SVP20","07:05","Wandoor","Bus Terminus","08:10","via Nayasahar"],
+["SVP20","09:00","Bus Terminus","Wandoor","10:00","via Dhani Khadi"],
+["SVP20","10:05","Wandoor","Bus Terminus","11:10","via Dhani Khadi"],
+["SVP20","13:55","Bus Terminus","Wandoor","14:50","via Dhani Khadi"],
+["SVP20","14:55","Wandoor","Bus Terminus","15:55","via Dhani Khadi"],
+["SVP20","16:40","Bus Terminus","Manjery","17:35","via Dhani Khadi"],
+["SVP20","17:40","Manjery","Bus Terminus","18:40","via Nayasahar"],
+["SVP20","19:30","Bus Terminus","Attam Pahad","20:00",""],
+["SVP20","20:05","Attam Pahad","Bus Terminus","20:35",""],
+["SVP21","06:00","Bus Terminus","New Wandoor","06:55","via Loha Barik, Dhani Khadi"],
+["SVP21","07:00","North Wandoor","Bus Terminus","08:25","via Nayasahar, G B Pant"],
+["SVP21","09:20","Bus Terminus","Pema","09:50",""],
+["SVP21","09:55","Pema","Bus Terminus","10:30","via G B Pant"],
+["SVP21","13:30","Bus Terminus","North Wandoor","14:30","via Nayasahar"],
+["SVP21","14:35","North Wandoor","Bus Terminus","15:35","via Dhani Khadi"],
+["SVP21","16:40","Bus Terminus","Chatham","16:55",""],
+["SVP21","17:00","Chatham","Pema","17:45",""],
+["SVP21","17:50","Pema","Chatham","18:40",""],
+["SVP21","18:50","Chatham","Bus Terminus","19:05",""],
+["SVP22","07:00","Bus Terminus","Manglutan","08:00","via Nayasahar, Teylar Shelter"],
+["SVP22","08:00","Manglutan","Bus Terminus","08:55","via Dhanikhari"],
+["SVP22","13:50","Bus Terminus","Manglutan","14:50","via Dhani Khadi"],
+["SVP22","14:50","Manglutan","Bus Terminus","15:50","via Nayasahar, Teylar Shelter"],
+["SVP23","06:30","Bus Terminus","Manjery","07:25","via Nayasahar"],
+["SVP23","07:30","Manjery","Gopal Nagar","08:05","via Habdipur, Dhani Khadi"],
+["SVP23","08:10","Gopal Nagar","Bus Terminus","09:30","via Prothrapur, Vayou Vihar, Brookshabad"],
+["SVP23","13:30","Bus Terminus","Gopal Nagar","14:20",""],
+["SVP23","14:30","Gopal Nagar","Manjery","15:15",""],
+["SVP23","15:30","Manjery","Bus Terminus","16:20","via Nayasahar"],
+["SVP24","07:00","Bus Terminus","Manjery","07:55","via Dhani Khadi"],
+["SVP24","08:00","Manjery","Bus Terminus","09:05","via Dhani Khadi"],
+["SVP24","09:20","Bus Terminus","Manjery","10:15","via Nayasahar"],
+["SVP24","10:20","Manjery","Bus Terminus","11:25","via Nayasahar"],
+["SVP24","13:45","Bus Terminus","Manjery","14:40","via Dhani Khadi"],
+["SVP24","14:45","Manjery","Bus Terminus","15:45","via Dhani Khadi"],
+["SVP24","16:00","Bus Terminus","Manjery","16:55","via Nayasahar"],
+["SVP24","17:00","Manjery","Bus Terminus","18:10","via Nayasahar"],
+["SVP25","05:15","Bus Terminus","Manjery","06:15","via Nayasahar"],
+["SVP25","06:25","Manjery","Bus Terminus","07:25",""],
+["SVP25","08:15","Bus Terminus","Manjery","09:10","via Girls School"],
+["SVP25","09:15","Manjery","Bus Terminus","10:15",""],
+["SVP25","11:00","Bus Terminus","Manjery","12:00",""],
+["SVP25","12:05","Manjery","Bus Terminus","13:05",""],
+["SVP26","06:00","Bus Terminus","Manjery","06:55","via Nayasahar"],
+["SVP26","07:00","Manjery","Bus Terminus","08:15","via Dhani Khadi"],
+["SVP26","09:00","Bus Terminus","Manjery","09:55","via Nayasahar"],
+["SVP26","10:00","Manjery","Bus Terminus","11:15","via Dhani Khadi"],
+["SVP26","13:25","Bus Terminus","Manjery","14:35","via Dhani Khadi"],
+["SVP26","14:40","Manjery","Bus Terminus","15:40","via Nayasahar"],
+["SVP26","18:00","Bus Terminus","Manjery","19:00","via Nayasahar"],
+["SVP26","19:05","Manjery","Bus Terminus","20:05","via Nayasahar"],
+["SVP27","05:00","Bus Terminus","Indra Nagar","05:55",""],
+["SVP27","06:00","Indra Nagar","Bus Terminus","07:00",""],
+["SVP27","07:05","Bus Terminus","Indra Nagar","08:00",""],
+["SVP27","08:05","Indra Nagar","Bus Terminus","09:30","via G B Pant"],
+["SVP27","13:30","Bus Terminus","Indra Nagar","14:25",""],
+["SVP27","14:30","Indra Nagar","Bus Terminus","15:40","via RLB"],
+["SVP27","18:30","Bus Terminus","Indra Nagar","19:10",""],
+["SVP27","19:15","Indra Nagar","Bus Terminus","20:15",""],
+["SVP28","05:45","Bus Terminus","Bimlitan","06:30",""],
+["SVP28","06:35","Bimlitan","Bus Terminus","07:10",""],
+["SVP28","07:20","Bus Terminus","Bimlitan","08:00",""],
+["SVP28","08:05","Bimlitan","Bus Terminus","08:40","via JNRM"],
+["SVP28","10:00","Bus Terminus","Bimlitan","10:45",""],
+["SVP28","10:50","Bimlitan","Bus Terminus","11:35",""],
+["SVP28","12:15","Bus Terminus","Bimlitan","12:55",""],
+["SVP28","13:00","Bimlitan","Bus Terminus","13:40",""],
+["SVP28","14:10","Bus Terminus","Bimlitan","14:40",""],
+["SVP28","14:45","Bimlitan","Bus Terminus","15:25",""],
+["SVP28","15:30","Bus Terminus","Bimlitan","16:10",""],
+["SVP28","16:15","Bimlitan","Bus Terminus","16:50",""],
+["SVP28","17:15","Bus Terminus","Bimlitan","17:55","via Secretariat"],
+["SVP28","18:00","Bimlitan","Bus Terminus","18:40",""],
+["SVP28","19:10","Bus Terminus","Bimlitan","19:45",""],
+["SVP28","19:50","Bimlitan","Bus Terminus","20:40",""],
+["SVP29","06:05","Bus Terminus","Anant Vihar","06:30",""],
+["SVP29","06:35","Anant Vihar","Bus Terminus","07:00",""],
+["SVP29","07:15","Bus Terminus","Bimblitan Basti","07:45","via Anant Vihar"],
+["SVP29","07:45","Bimblitan Basti","Bus Terminus","08:25","via JNRM, VIP Road"],
+["SVP29","09:15","Bus Terminus","RSN Farm","09:50","via Anant Vihar"],
+["SVP29","09:55","RSN Farm","Bus Terminus","10:25","via Anant Vihar"],
+["SVP29","10:30","Bus Terminus","RSN Farm","11:00","via Anant Vihar"],
+["SVP29","11:05","RSN Farm","Bus Terminus","11:40","via Anant Vihar"],
+["SVP29","11:45","Bus Terminus","RSN Farm","12:20","via Anant Vihar"],
+["SVP29","12:25","RSN Farm","Bus Terminus","12:55","via Anant Vihar"],
+["SVP29","13:00","Bus Terminus","RSN Farm","13:30","via Anant Vihar"],
+["SVP29","13:35","RSN Farm","Bus Terminus","14:05","via Anant Vihar"],
+["SVP29","14:20","Bus Terminus","RSN Farm","14:55","via JNRM, VIP Road"],
+["SVP29","15:00","RSN Farm","Bus Terminus","15:35","via Anant Vihar"],
+["SVP29","17:00","Bus Terminus","RSN Farm","17:35","via Secretariat, Anant Vihar"],
+["SVP29","17:40","RSN Farm","Bus Terminus","18:20","via Anant Vihar"],
+["SVP29","18:30","Bus Terminus","RSN Farm","19:00","via Anant Vihar"],
+["SVP29","19:05","RSN Farm","Bus Terminus","19:35","via Anant Vihar"],
+["SVP30","07:00","Bus Terminus","PS Teylarabad","07:30",""],
+["SVP30","07:35","PS Teylarabad","Bus Terminus","08:10","via R/Basti, G B Pant"],
+["SVP30","08:20","Bus Terminus","PS Teylarabad","08:50",""],
+["SVP30","08:55","PS Teylarabad","Bus Terminus","09:30",""],
+["SVP30","09:45","Bus Terminus","PS Teylarabad","10:15",""],
+["SVP30","10:20","PS Teylarabad","Bus Terminus","10:50","via R/Basti, G B Pant"],
+["SVP30","11:00","Bus Terminus","PS Teylarabad","11:30",""],
+["SVP30","11:35","PS Teylarabad","Bus Terminus","12:05",""],
+["SVP30","12:25","Bus Terminus","PS Teylarabad","12:55",""],
+["SVP30","13:00","PS Teylarabad","Bus Terminus","13:35",""],
+["SVP30","14:30","Bus Terminus","PS Teylarabad","15:00","via D/Farm, Ranchi Basti"],
+["SVP30","15:05","PS Teylarabad","Bus Terminus","15:35",""],
+["SVP30","15:45","Bus Terminus","PS Teylarabad","16:15",""],
+["SVP30","16:20","PS Teylarabad","Bus Terminus","16:50",""],
+["SVP30","16:55","Bus Terminus","PS Teylarabad","17:25",""],
+["SVP30","17:30","PS Teylarabad","Bus Terminus","18:00",""],
+["SVP30","18:10","Bus Terminus","PS Teylarabad","18:40",""],
+["SVP30","18:45","PS Teylarabad","Bus Terminus","19:15",""],
+["SVP30","19:20","Bus Terminus","PS Teylarabad","19:50",""],
+["SVP30","19:50","PS Teylarabad","Bus Terminus","20:20",""],
+["SVP31","05:30","Bus Terminus","Rajaji Nagar","06:00",""],
+["SVP31","06:05","Rajaji Nagar","Bus Terminus","06:35",""],
+["SVP31","06:40","Bus Terminus","Rajaji Nagar","07:10",""],
+["SVP31","07:10","Rajaji Nagar","Bus Terminus","07:50",""],
+["SVP31","08:00","Bus Terminus","Rajaji Nagar","08:40","via Shadipur"],
+["SVP31","08:40","Rajaji Nagar","Bus Terminus","09:20",""],
+["SVP31","09:45","Bus Terminus","Rajaji Nagar","10:15",""],
+["SVP31","10:20","Rajaji Nagar","Bus Terminus","10:55",""],
+["SVP31","11:20","Bus Terminus","Rajaji Nagar","11:50",""],
+["SVP31","11:55","Rajaji Nagar","Bus Terminus","12:25",""],
+["SVP31","13:00","Bus Terminus","Rajaji Nagar","13:30",""],
+["SVP31","13:35","Rajaji Nagar","Bus Terminus","14:05",""],
+["SVP31","14:40","Bus Terminus","Rajaji Nagar","15:10",""],
+["SVP31","15:15","Rajaji Nagar","Bus Terminus","15:45",""],
+["SVP31","17:10","Bus Terminus","Rajaji Nagar","17:40","via D/Farm, Ranchi Basti"],
+["SVP31","17:45","Rajaji Nagar","Bus Terminus","18:20",""],
+["SVP31","18:50","Bus Terminus","Rajaji Nagar","19:20",""],
+["SVP31","19:25","Rajaji Nagar","Bus Terminus","20:00",""],
+["SVP32","06:20","Bus Terminus","Chidiyatapu","07:15",""],
+["SVP32","07:20","Chidiyatapu","Bus Terminus","08:20",""],
+["SVP32","09:00","Bus Terminus","Chidiyatapu","10:00",""],
+["SVP32","10:05","Chidiyatapu","Bus Terminus","11:05",""],
+["SVP32","13:00","Bus Terminus","Chidiyatapu","14:05",""],
+["SVP32","14:10","Chidiyatapu","Bus Terminus","15:30",""],
+["SVP32","16:00","Bus Terminus","Chidiyatapu","16:55",""],
+["SVP32","17:00","Chidiyatapu","Bus Terminus","18:30",""],
+["SVP33","06:30","Bus Terminus","Chidiyatapu","07:35","via Beodnabad"],
+["SVP33","07:40","Chidiyatapu","Bus Terminus","08:40","via G B Pant"],
+["SVP33","10:30","Bus Terminus","Chidiyatapu","11:25","via Beodnabad"],
+["SVP33","11:30","Chidiyatapu","Bus Terminus","12:30","via Beodnabad"],
+["SVP33","15:00","Bus Terminus","Chidiyatapu","16:00","via M/Pahad"],
+["SVP33","16:05","Chidiyatapu","Bus Terminus","17:10","via Beodnabad"],
+["SVP33","18:30","Bus Terminus","Chidiyatapu","19:40","via Beodnabad"],
+["SVP33","19:45","Chidiyatapu","Bus Terminus","20:30","via Beodnabad"],
+["SVP34","05:00","Bus Terminus","Chidiyatapu","06:00",""],
+["SVP34","06:05","Chidiyatapu","Bus Terminus","07:05",""],
+["SVP34","07:20","Bus Terminus","Chidiyatapu","08:25",""],
+["SVP34","08:25","Chidiyatapu","Bus Terminus","09:30",""],
+["SVP34","09:50","Bus Terminus","Kodiyaghat","10:30",""],
+["SVP34","10:45","Kodiyaghat","Bus Terminus","11:35",""],
+["SVP35","05:00","Chidiyatapu","Bus Terminus","06:00",""],
+["SVP35","07:05","Bus Terminus","Chidiyatapu","08:05",""],
+["SVP35","08:10","Chidiyatapu","Bus Terminus","09:20","via JNRM"],
+["SVP35","13:50","Bus Terminus","Chidiyatapu","14:50",""],
+["SVP35","14:50","Chidiyatapu","Bus Terminus","15:50",""],
+["SVP35","17:00","Bus Terminus","Chidiyatapu","18:00",""],
+["SVP35","18:05","Chidiyatapu","Bus Terminus","19:05",""],
+["SVP35","20:10","Bus Terminus","Chidiyatapu","21:10",""],
+["SVP36","06:15","Bus Terminus","Kodiyaghat","07:10","via Beodnabad"],
+["SVP36","07:15","Kodiyaghat","Bus Terminus","08:15","via M/Pahad, JNRM"],
+["SVP36","08:40","Bus Terminus","Chidiyatapu","09:40",""],
+["SVP36","09:40","Chidiyatapu","Bus Terminus","10:40",""],
+["SVP36","12:00","Bus Terminus","Chidiyatapu","12:55",""],
+["SVP36","13:00","Chidiyatapu","Bus Terminus","14:00",""],
+["SVP36","14:40","Bus Terminus","Chidiyatapu","15:35",""],
+["SVP36","15:40","Chidiyatapu","Bus Terminus","16:45",""],
+["SVP37","05:15","Bus Terminus","Anna Nagar","06:10",""],
+["SVP37","06:15","Anna Nagar","Bus Terminus","07:00",""],
+["SVP37","07:15","Bus Terminus","Anna Nagar","08:10",""],
+["SVP37","08:15","Anna Nagar","Bus Terminus","09:20",""],
+["SVP37","10:15","Bus Terminus","Anna Nagar","11:10",""],
+["SVP37","11:15","Anna Nagar","Bus Terminus","12:15",""],
+["SVP37","13:40","Bus Terminus","Anna Nagar","14:35",""],
+["SVP37","14:40","Anna Nagar","Bus Terminus","15:35",""],
+["SVP37","16:15","Bus Terminus","Anna Nagar","18:00",""],
+["SVP37","18:05","Anna Nagar","Bus Terminus","19:05",""],
+["SVP37","18:40","Bus Terminus","Anna Nagar","19:35",""],
+["SVP37","19:40","Anna Nagar","Bus Terminus","20:30",""],
+["SVP38","06:30","Bus Terminus","Japan Road","07:10",""],
+["SVP38","07:15","Japan Road","Bus Terminus","08:10","via G B Pant, JNRM"],
+["SVP38","08:30","Bus Terminus","Japan Road","09:10",""],
+["SVP38","09:15","Japan Road","Bus Terminus","10:10","via G B Pant"],
+["SVP38","13:30","Bus Terminus","Japan Road","14:30",""],
+["SVP38","14:35","Japan Road","Bus Terminus","15:10","via G B Pant"],
+["SVP38","17:00","Bus Terminus","Japan Road","17:50",""],
+["SVP38","17:55","Japan Road","Bus Terminus","18:40","via G B Pant"],
+["SVP38","19:45","Bus Terminus","Japan Road","20:20",""],
+["SVP38","20:25","Japan Road","Bus Terminus","21:35",""],
+["SVP39","04:15","Bus Terminus","Pema Tsunami","04:35",""],
+["SVP39","04:40","Pema Tsunami","Bus Terminus","05:20",""],
+["SVP39","06:00","Bus Terminus","Japan Road","06:40",""],
+["SVP39","06:45","Japan Road","Bus Terminus","07:40",""],
+["SVP39","07:50","Bus Terminus","Japan Road","08:45",""],
+["SVP39","08:50","Japan Road","Bus Terminus","10:00",""],
+["SVP39","12:15","Bus Terminus","Japan Road","13:05",""],
+["SVP39","13:10","Japan Road","Bus Terminus","14:15",""],
+["SVP39","14:40","Bus Terminus","Japan Road","15:25",""],
+["SVP39","15:30","Japan Road","Bus Terminus","16:20",""],
+["SVP39","17:30","Bus Terminus","Japan Road","18:15",""],
+["SVP39","18:20","Japan Road","Bus Terminus","19:25",""],
+["SVP40","06:30","Bus Terminus","Pema","07:00",""],
+["SVP40","07:05","Pema","Medical","07:45",""],
+["SVP40","07:50","Medical","Macca Pahad","08:25",""],
+["SVP40","08:30","Macca Pahad","Bus Terminus","09:30","via JNRM, G B Pant"],
+["SVP40","10:50","Bus Terminus","Pema","11:25",""],
+["SVP40","11:30","Pema","Bus Terminus","12:05",""],
+["SVP40","13:05","Bus Terminus","Pema","13:40",""],
+["SVP40","13:40","Pema","Bus Terminus","14:15",""],
+["SVP40","14:30","Bus Terminus","Macca Pahad","15:05",""],
+["SVP40","15:10","Macca Pahad","Bus Terminus","15:45","Tsunami shelter"],
+["SVP40","16:30","Bus Terminus","Pema","17:05",""],
+["SVP40","17:05","Pema","Bus Terminus","17:50",""],
+["SVP40","18:00","Bus Terminus","Macca Pahad","18:40",""],
+["SVP40","18:45","Macca Pahad","Bus Terminus","19:20","Tsunami shelter"],
+["SVP41","05:30","Bus Terminus","New Pahargaon","06:00",""],
+["SVP41","06:05","New Pahargaon","Bus Terminus","06:35",""],
+["SVP41","06:50","Bus Terminus","New Pahargaon","07:20",""],
+["SVP41","07:25","New Pahargaon","Bus Terminus","08:20",""],
+["SVP41","08:35","Bus Terminus","New Pahargaon","09:05",""],
+["SVP41","09:10","New Pahargaon","Bus Terminus","09:40",""],
+["SVP41","10:00","Bus Terminus","New Pahargaon","10:30",""],
+["SVP41","10:35","New Pahargaon","Bus Terminus","11:15",""],
+["SVP41","12:40","Bus Terminus","New Pahargaon","13:10",""],
+["SVP41","13:15","New Pahargaon","Bus Terminus","13:45",""],
+["SVP41","13:55","Bus Terminus","New Pahargaon","14:30",""],
+["SVP41","14:35","New Pahargaon","Bus Terminus","15:10",""],
+["SVP41","15:15","Bus Terminus","New Pahargaon","15:45",""],
+["SVP41","17:45","Bus Terminus","New Pahargaon","18:10",""],
+["SVP41","18:15","New Pahargaon","Bus Terminus","18:50",""],
+["SVP41","19:15","Bus Terminus","New Pahargaon","19:45",""],
+["SVP41","19:50","New Pahargaon","Bus Terminus","20:20",""],
+["SVP42","05:00","Bus Terminus","New Pahargaon","05:30",""],
+["SVP42","05:35","New Pahargaon","Bus Terminus","06:05",""],
+["SVP42","06:20","Bus Terminus","New Pahargaon","06:50",""],
+["SVP42","06:55","New Pahargaon","Bus Terminus","07:25",""],
+["SVP42","07:30","Bus Terminus","New Pahargaon","08:00",""],
+["SVP42","08:05","New Pahargaon","Bus Terminus","08:35",""],
+["SVP42","08:45","Bus Terminus","New Pahargaon","09:15",""],
+["SVP42","09:20","New Pahargaon","Bus Terminus","09:50",""],
+["SVP42","10:30","Bus Terminus","New Pahargaon","11:00",""],
+["SVP42","11:05","New Pahargaon","Bus Terminus","11:35",""],
+["SVP42","13:15","Bus Terminus","New Pahargaon","13:45",""],
+["SVP42","13:45","New Pahargaon","Bus Terminus","14:20",""],
+["SVP42","14:45","Bus Terminus","New Pahargaon","15:15",""],
+["SVP42","15:15","New Pahargaon","Bus Terminus","15:45",""],
+["SVP42","15:55","Bus Terminus","New Pahargaon","16:20",""],
+["SVP42","16:25","New Pahargaon","Bus Terminus","16:55",""],
+["SVP42","17:00","Bus Terminus","New Pahargaon","17:30",""],
+["SVP42","17:35","New Pahargaon","Bus Terminus","18:05",""],
+["SVP42","18:10","Bus Terminus","New Pahargaon","18:40",""],
+["SVP42","18:45","New Pahargaon","Bus Terminus","19:15",""],
+["SVP43","12:00","Bus Terminus","Wandoor","13:00","Nayashahar"],
+["SVP43","13:05","Wandoor","Bus Terminus","14:05","Nayashahar"],
+["SVP43","15:00","Bus Terminus","Wandoor","16:00","Dhanikhari"],
+["SVP43","16:05","Wandoor","Bus Terminus","17:15","Dhanikhari"],
+["SVP43","17:15","Bus Terminus","Attampahar","17:45",""],
+["SVP43","17:50","Attampahar","Bus Terminus","18:20",""],
+["SVP44","05:15","Bus Terminus","Brichgunj","05:45",""],
+["SVP44","05:50","Brichgunj","Bus Terminus","06:20",""],
+["SVP44","06:40","Bus Terminus","Brichgunj","07:20",""],
+["SVP44","07:25","Brichgunj","Bus Terminus","07:55","via JNRM"],
+["SVP44","08:30","Bus Terminus","Brichgunj","09:10",""],
+["SVP44","09:15","Brichgunj","Bus Terminus","09:50",""],
+["SVP44","10:15","Bus Terminus","Brichgunj","10:55",""],
+["SVP44","10:55","Brichgunj","Bus Terminus","11:35",""],
+["SVP44","11:50","Bus Terminus","Brichgunj","12:25",""],
+["SVP44","12:30","Brichgunj","Bus Terminus","13:15",""],
+["SVP44","13:40","Bus Terminus","Brichgunj","14:10",""],
+["SVP44","14:25","Brichgunj","Bus Terminus","15:15",""],
+["SVP44","15:20","Bus Terminus","Brichgunj","15:55",""],
+["SVP44","16:00","Brichgunj","Bus Terminus","16:45",""],
+["SVP44","17:10","Bus Terminus","Brichgunj","17:55",""],
+["SVP44","18:00","Brichgunj","Bus Terminus","18:30",""],
+["SVP44","18:35","Bus Terminus","Brichgunj","19:05",""],
+["SVP44","19:05","Brichgunj","Bus Terminus","19:35",""],
+["SVP45","05:15","Bus Terminus","Attampahad","05:45","via Dhanikhari Gunj"],
+["SVP45","05:50","Attampahad","Bus Terminus","06:45",""],
+["SVP45","06:50","Bus Terminus","Attampahad","07:25",""],
+["SVP45","07:25","Attampahad","Chatham","08:00",""],
+["SVP45","08:05","Chatham","Attampahad","08:45",""],
+["SVP45","08:50","Attampahad","Bus Terminus","09:25",""],
+["SVP45","09:45","Bus Terminus","Attampahad","10:15",""],
+["SVP45","10:20","Attampahad","Bus Terminus","10:55",""],
+["SVP45","11:30","Bus Terminus","Attampahad","12:00",""],
+["SVP45","12:05","Attampahad","Bus Terminus","12:40",""],
+["SVP45","13:00","Bus Terminus","Attampahad","13:30",""],
+["SVP45","13:35","Attampahad","Bus Terminus","14:10",""],
+["SVP45","14:40","Bus Terminus","Attampahad","15:10",""],
+["SVP45","15:15","Attampahad","Bus Terminus","15:50",""],
+["SVP45","16:00","Bus Terminus","Attampahad","16:30",""],
+["SVP45","16:35","Attampahad","Bus Terminus","17:10",""],
+["SVP45","18:00","Bus Terminus","Attampahad","18:30",""],
+["SVP45","18:35","Attampahad","Bus Terminus","19:10",""],
+["SVP46","06:15","Bus Terminus","Attam Pahad","06:35",""],
+["SVP46","06:50","Attam Pahad","Bus Terminus","07:20","via Gurjan Charma"],
+["SVP46","07:50","Bus Terminus","Attam Pahad","08:20",""],
+["SVP46","08:30","Attam Pahad","Bus Terminus","09:00","via Birsha Nagar"],
+["SVP46","09:30","Bus Terminus","Attam Pahad","10:00",""],
+["SVP46","10:05","Attam Pahad","Bus Terminus","10:35","via Gurjan Charma"],
+["SVP46","11:00","Bus Terminus","Attam Pahad","11:30",""],
+["SVP46","11:35","Attam Pahad","Bus Terminus","12:05",""],
+["SVP46","12:30","Bus Terminus","Attam Pahad","13:00",""],
+["SVP46","13:05","Attam Pahad","Bus Terminus","13:35",""],
+["SVP46","14:20","Bus Terminus","Attam Pahad","14:50",""],
+["SVP46","14:55","Attam Pahad","Bus Terminus","15:25",""],
+["SVP46","15:30","Bus Terminus","Attam Pahad","16:00",""],
+["SVP46","16:05","Attam Pahad","Bus Terminus","16:35","via Gurjan Charma"],
+["SVP46","16:50","Bus Terminus","Attam Pahad","17:20",""],
+["SVP46","17:25","Attam Pahad","Bus Terminus","17:55","via Gurjan Charma"],
+["SVP46","18:30","Bus Terminus","Attam Pahad","19:00",""],
+["SVP46","19:05","Attam Pahad","Bus Terminus","19:35",""],
+["SVP47","06:00","Bus Terminus","Marine Colony","06:20",""],
+["SVP47","06:25","Marine Colony","Bus Terminus","06:50","via Jawahar"],
+["SVP47","07:20","Bus Terminus","Attam Pahad","07:45",""],
+["SVP47","07:50","Attam Pahad","Bus Terminus","08:30",""],
+["SVP47","08:40","Bus Terminus","Attam Pahad","09:10",""],
+["SVP47","09:15","Attam Pahad","Bus Terminus","09:50",""],
+["SVP47","10:15","Bus Terminus","Attam Pahad","10:45",""],
+["SVP47","10:50","Attam Pahad","Bus Terminus","11:20",""],
+["SVP47","12:00","Bus Terminus","Attam Pahad","12:30",""],
+["SVP47","12:35","Attam Pahad","Bus Terminus","13:10",""],
+["SVP47","13:40","Bus Terminus","Gopal Nagar","14:40","via Lal Pahad"],
+["SVP47","14:45","Gopal Nagar","Bus Terminus","15:45","via Lal Pahad, Vayou Vihar"],
+["SVP47","16:30","Bus Terminus","Gopal Nagar","17:30","via Lal Pahad"],
+["SVP47","17:35","Gopal Nagar","Bus Terminus","18:35","via Lal Pahad"],
+["SVP48","05:30","Bus Terminus","Brookshabad","05:55","via Shadipur"],
+["SVP48","06:00","Brookshabad","Bus Terminus","06:35","via Bathu Basti"],
+["SVP48","07:15","Bus Terminus","Garacharma TTI","07:45","via Bathu Basti"],
+["SVP48","07:50","Garacharma TTI","Bus Terminus","08:30","via Shadipur"],
+["SVP48","08:50","Bus Terminus","Brookshabad","09:25","via Bathu Basti"],
+["SVP48","09:25","Brookshabad","Bus Terminus","09:55","via Shadipur"],
+["SVP48","10:00","Bus Terminus","Brookshabad","10:35","via Bathu Basti"],
+["SVP48","10:35","Brookshabad","Bus Terminus","11:00","via Shadipur"],
+["SVP48","12:00","Bus Terminus","Brookshabad","12:25","via Shadipur"],
+["SVP48","12:25","Brookshabad","Bus Terminus","13:00","via Bathu Basti"],
+["SVP48","13:30","Bus Terminus","Brookshabad","13:55","via Shadipur"],
+["SVP48","13:55","Brookshabad","Bus Terminus","14:00","via Bathu Basti"],
+["SVP48","15:00","Bus Terminus","Brookshabad","15:25","via Shadipur"],
+["SVP48","15:30","Brookshabad","Bus Terminus","16:10","via Bathu Basti"],
+["SVP48","16:45","Bus Terminus","Carbyn Junction","17:10","via Shadipur"],
+["SVP48","17:15","Carbyn Junction","Bus Terminus","17:50","via Shadipur"],
+["SVP48","17:55","Bus Terminus","Carbyn Junction","18:20","via Shadipur"],
+["SVP48","18:25","Carbyn Junction","Bus Terminus","19:10",""],
+["SVP49","04:50","Bus Terminus","Brookshabad","05:25","via Bathu Basti"],
+["SVP49","05:30","Brookshabad","Bus Terminus","06:00","via Shadipur"],
+["SVP49","06:25","Bus Terminus","Brookshabad","06:50","via Shadipur"],
+["SVP49","06:50","Brookshabad","Bus Terminus","07:30","via Bathu Basti"],
+["SVP49","07:30","Bus Terminus","Brichgunj","08:00","via Bathu Basti"],
+["SVP49","08:10","Brichgunj","Bus Terminus","08:50","via Bathu Basti"],
+["SVP49","10:00","Bus Terminus","Brookshabad","10:25","via Shadipur"],
+["SVP49","10:25","Brookshabad","Bus Terminus","11:05","via Bathu Basti"],
+["SVP49","11:15","Bus Terminus","Carbyn Junction","11:35","via Shadipur"],
+["SVP49","11:35","Carbyn Junction","Bus Terminus","12:10","via Bathu Basti"],
+["SVP49","14:00","Bus Terminus","Carbyn Junction","14:35","via Bathu Basti"],
+["SVP49","14:35","Carbyn Junction","Bus Terminus","15:00","via Shadipur"],
+["SVP49","16:00","Bus Terminus","Carbyn Junction","16:35","via Bathu Basti"],
+["SVP49","16:35","Carbyn Junction","Bus Terminus","17:00","via Shadipur"],
+["SVP49","17:25","Bus Terminus","Carbyn's Cove Beach","17:50","via Shadipur"],
+["SVP49","17:55","Carbyn's Cove Beach","Bus Terminus","18:25","via Shadipur"],
+["SVP49","18:40","Bus Terminus","Carbyn Junction","19:10","via Shadipur"],
+["SVP49","19:15","Carbyn Junction","Bus Terminus","19:45","via Shadipur"],
+["SVP49","20:00","Bus Terminus","Carbyn Junction","20:30","via Shadipur"],
+["SVP49","20:30","Carbyn Junction","Bus Terminus","21:00","via Shadipur"],
+["SVP50","06:15","Bus Terminus","Carbyn Junction","06:45",""],
+["SVP50","06:50","Carbyn Junction","Bus Terminus","07:20",""],
+["SVP50","07:25","Bus Terminus","Carbyn's Cove Beach","08:00",""],
+["SVP50","08:05","Carbyn's Cove Beach","Bus Terminus","08:40",""],
+["SVP50","09:00","Bus Terminus","Carbyn Junction","09:30",""],
+["SVP50","09:35","Carbyn Junction","Bus Terminus","10:05",""],
+["SVP50","10:30","Bus Terminus","Carbyn Junction","11:00",""],
+["SVP50","11:05","Carbyn Junction","Bus Terminus","11:35",""],
+["SVP50","11:40","Bus Terminus","Carbyn Junction","12:10",""],
+["SVP50","12:15","Carbyn Junction","Bus Terminus","12:45",""],
+["SVP50","13:00","Bus Terminus","Carbyn Junction","13:30",""],
+["SVP50","13:35","Carbyn Junction","Bus Terminus","14:05",""],
+["SVP50","14:30","Bus Terminus","Brookshabad","15:00",""],
+["SVP50","15:05","Brookshabad","Bus Terminus","15:35",""],
+["SVP50","16:30","Bus Terminus","Brookshabad","17:00",""],
+["SVP50","17:10","Brookshabad","Bus Terminus","17:40",""],
+["SVP50","18:15","Bus Terminus","Carbyn Junction","18:45",""],
+["SVP50","18:50","Carbyn Junction","Bus Terminus","19:20",""],
+["SVP50","19:30","Bus Terminus","Carbyn Junction","20:00",""],
+["SVP50","20:05","Carbyn Junction","Bus Terminus","20:35",""],
+["SVP51","05:50","Bus Terminus","Carbyn Junction","06:15",""],
+["SVP51","06:20","Carbyn Junction","Bus Terminus","06:50",""],
+["SVP51","07:10","Bus Terminus","Carbyn Junction","07:35",""],
+["SVP51","07:40","Carbyn Junction","Bus Terminus","08:15",""],
+["SVP51","08:30","Bus Terminus","Brookshabad","08:55",""],
+["SVP51","08:55","Brookshabad","Bus Terminus","09:20",""],
+["SVP51","09:30","Bus Terminus","Carbyn Junction","10:00",""],
+["SVP51","10:05","Carbyn Junction","Bus Terminus","10:35",""],
+["SVP51","10:50","Bus Terminus","Carbyn Junction","11:20",""],
+["SVP51","11:25","Carbyn Junction","Bus Terminus","11:55",""],
+["SVP51","12:30","Bus Terminus","Brookshabad","13:00",""],
+["SVP51","13:05","Brookshabad","Bus Terminus","13:35",""],
+["SVP51","13:50","Bus Terminus","Brookshabad","14:20",""],
+["SVP51","14:25","Brookshabad","Bus Terminus","14:50",""],
+["SVP51","14:50","Bus Terminus","Brichgunj","15:20","via Jawahar Colony"],
+["SVP51","15:25","Brichgunj","Bus Terminus","15:55",""],
+["SVP51","17:05","Bus Terminus","Brookshabad","17:35",""],
+["SVP51","17:40","Brookshabad","Bus Terminus","18:15",""],
+["SVP51","18:55","Bus Terminus","Carbyn Junction","19:25",""],
+["SVP51","19:30","Carbyn Junction","Bus Terminus","20:00",""],
+["BTAC","04:00","Bus Terminus","Middle Strait","07:30",""],
+["BTAC","15:30","Middle Strait","Bus Terminus","18:30",""]
+];
+
+/* ---------- Geometry (equirectangular flat-earth approx — fine over this range) ---------- */
+const REF_LAT = 11.65;
+const KM_PER_DEG_LAT = 110.574;
+const KM_PER_DEG_LON = 111.320 * Math.cos(REF_LAT * Math.PI/180);
+
+function toXY(lat, lon){
+  return { x: lon * KM_PER_DEG_LON, y: lat * KM_PER_DEG_LAT };
+}
+function dist(a, b){ return Math.hypot(a.x-b.x, a.y-b.y); }
+
+// Closest point of a point P to segment A-B, returns {t, point, perpDist}
+function closestOnSegment(P, A, B){
+  const AB = { x: B.x-A.x, y: B.y-A.y };
+  const AP = { x: P.x-A.x, y: P.y-A.y };
+  const abLenSq = AB.x*AB.x + AB.y*AB.y;
+  let t = abLenSq === 0 ? 0 : (AP.x*AB.x + AP.y*AB.y) / abLenSq;
+  t = Math.max(0, Math.min(1, t));
+  const pt = { x: A.x + t*AB.x, y: A.y + t*AB.y };
+  return { t, perpDist: dist(P, pt) };
+}
+
+function toMinutes(hhmm){ const [h,m]=hhmm.split(':').map(Number); return h*60+m; }
+function fmtEta(mins){
+  if (mins <= 0) return 'now';
+  if (mins < 60) return 'in ' + mins + ' min';
+  const h = Math.floor(mins/60), m = mins % 60;
+  return 'in ' + h + 'h' + (m? ' '+m+'m':'');
+}
+function fmtClock(mins){
+  mins = ((mins % 1440) + 1440) % 1440;
+  const h = Math.floor(mins/60), m = mins % 60;
+  return String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+}
+
+const THRESH_KM = 1.2;        // how close the straight-line path must pass to count as "crossing" you
+const WINDOW_MIN = 30;        // look-ahead window
+
+let userPos = null; // {lat, lon}
+let watchId = null;
+
+function computeHits(now){
+  if (!userPos) return [];
+  const P = toXY(userPos.lat, userPos.lon);
+  const hits = [];
+  PB_TRIPS.forEach(t=>{
+    const [route, depStr, from, to, arrStr, note] = t;
+    const fromC = coordOf(from), toC = coordOf(to);
+    if (!fromC || !toC) return;
+    let depMin = toMinutes(depStr), arrMin = toMinutes(arrStr);
+    if (arrMin <= depMin) arrMin += 1440; // overnight halt edge case
+    const D = arrMin - depMin;
+    const A = toXY(fromC[0], fromC[1]);
+    const B = toXY(toC[0], toC[1]);
+    const { t: frac, perpDist } = closestOnSegment(P, A, B);
+    if (perpDist > THRESH_KM) return;
+    const closestMin = depMin + frac * D;
+    const etaMin = closestMin - now;
+    if (etaMin < -2 || etaMin > WINDOW_MIN) return; // allow a 2-min grace for "just now"
+    // current live position / distance, if bus is currently running
+    let liveDistKm = null;
+    if (now >= depMin && now <= arrMin){
+      const f = (now - depMin) / D;
+      const cur = { x: A.x + f*(B.x-A.x), y: A.y + f*(B.y-A.y) };
+      liveDistKm = dist(P, cur);
+    }
+    hits.push({ route, from, to, note, depStr, arrStr, perpDist, etaMin: Math.round(etaMin), closestClock: fmtClock(closestMin), liveDistKm });
+  });
+  hits.sort((a,b)=> a.etaMin - b.etaMin);
+  return hits;
+}
+
+function renderHits(hits){
+  const el = document.getElementById('resultArea');
+  if (!hits.length){
+    el.innerHTML = '<div class="empty"><b>No bus passes near you in the next 30 minutes</b>Based on straight-line paths between Bus Terminus and each destination — try again closer to a known stop, or check the full timetable for routes further out.</div>';
+    return;
+  }
+  el.innerHTML = '<div class="section-title">Crossing near you — next 30 minutes</div>' +
+    hits.map(h=>{
+      const soon = h.etaMin <= 10;
+      const liveBit = h.liveDistKm != null ? `<span>live ≈ <b>${h.liveDistKm.toFixed(1)} km</b> from you</span>` : '';
+      return `<div class="hit ${soon?'soon':''}">
+        <div class="row1">
+          <span class="route">${h.route}</span>
+          <span class="path">${h.from} → ${h.to}</span>
+          <span class="eta">${fmtEta(h.etaMin)}</span>
+        </div>
+        <div class="meta">
+          <span>passes closest to you ≈ <b>${h.closestClock}</b></span>
+          <span>≈ <b>${h.perpDist.toFixed(1)} km</b> off your spot</span>
+          ${liveBit}
+        </div>
+      </div>`;
+    }).join('');
+}
+
+function tick(){
+  const d = new Date();
+  document.getElementById('clock').textContent =
+    String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')+':'+String(d.getSeconds()).padStart(2,'0');
+  if (userPos){
+    const now = d.getHours()*60 + d.getMinutes();
+    renderHits(computeHits(now));
+  }
+}
+
+function locate(){
+  const status = document.getElementById('statusLine');
+  if (!navigator.geolocation){
+    status.textContent = 'Geolocation isn\'t available on this device/browser.';
+    return;
+  }
+  status.textContent = 'Getting your location…';
+  document.getElementById('resultArea').innerHTML = '<div class="spinner">Locating you…</div>';
+  navigator.geolocation.getCurrentPosition(pos=>{
+    userPos = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+    status.textContent = 'Location locked (±' + Math.round(pos.coords.accuracy) + 'm). Checking the timetable against your position…';
+    const now = new Date(); const nowMin = now.getHours()*60 + now.getMinutes();
+    renderHits(computeHits(nowMin));
+    if (watchId === null){
+      watchId = navigator.geolocation.watchPosition(p=>{
+        userPos = { lat: p.coords.latitude, lon: p.coords.longitude };
+      }, ()=>{}, { enableHighAccuracy:true, maximumAge:15000 });
+    }
+  }, err=>{
+    status.textContent = 'Could not get your location (' + err.message + '). Try the browser fixes below, or tap "✎ Manual" to set your spot by hand.';
+    document.getElementById('resultArea').innerHTML = '<div class="empty"><b>Location unavailable</b>Your browser blocked or failed to get a location — often because the page is open inside an embedded view, or a site permission is set to block. Use "✎ Manual" above as a quick workaround.</div>';
+  }, { enableHighAccuracy:true, timeout:10000, maximumAge:5000 });
+}
+
+document.getElementById('locateBtn').addEventListener('click', locate);
+document.getElementById('refreshBtn').addEventListener('click', ()=>{
+  const now = new Date(); const nowMin = now.getHours()*60 + now.getMinutes();
+  if (userPos) renderHits(computeHits(nowMin));
+});
+
+/* ---------- Manual location fallback (for when browser geolocation is blocked) ---------- */
+const manualPanel = document.getElementById('manualPanel');
+const manualStopSelect = document.getElementById('manualStop');
+Object.keys(COORDS).sort().forEach(name=>{
+  const opt = document.createElement('option');
+  opt.value = name; opt.textContent = name;
+  manualStopSelect.appendChild(opt);
+});
+
+function applyManualPos(lat, lon, label){
+  userPos = { lat, lon };
+  const status = document.getElementById('statusLine');
+  status.textContent = 'Using manual location: ' + label + '. Checking the timetable…';
+  manualPanel.classList.add('hidden');
+  const now = new Date(); const nowMin = now.getHours()*60 + now.getMinutes();
+  renderHits(computeHits(nowMin));
+}
+
+document.getElementById('manualBtn').addEventListener('click', ()=>{
+  manualPanel.classList.toggle('hidden');
+});
+document.getElementById('useStopBtn').addEventListener('click', ()=>{
+  const name = manualStopSelect.value;
+  const c = COORDS[name];
+  if (c) applyManualPos(c[0], c[1], name);
+});
+document.getElementById('useCoordsBtn').addEventListener('click', ()=>{
+  const lat = parseFloat(document.getElementById('manualLat').value);
+  const lon = parseFloat(document.getElementById('manualLon').value);
+  if (isFinite(lat) && isFinite(lon)){
+    applyManualPos(lat, lon, lat.toFixed(4)+', '+lon.toFixed(4));
+  } else {
+    document.getElementById('statusLine').textContent = 'Enter valid numbers for latitude and longitude.';
+  }
+});
+
+document.getElementById('footNote').textContent =
+  'Covers the Sri Vijayapuram (Port Blair) STS bus unit only. Each route is approximated as a straight line from Bus Terminus to its destination, with the bus assumed to move at constant speed between the printed departure and arrival times — real roads curve, so treat the distance and timing as estimates, not exact.';
+
+tick();
+setInterval(tick, 1000);
+</script>
+</body>
+</html>
